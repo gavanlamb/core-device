@@ -1,0 +1,70 @@
+# Docker
+# Build a Docker image
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+resources:
+    -   repo: self
+
+variables:
+    tag: '$(Build.BuildId)'
+    imageName: 'core-device'
+    accountNamePrefix: 'thoud'
+
+stages:
+    -   stage: Build
+        displayName: Build
+        jobs:
+            -   job: Api
+                displayName: Api
+                condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+                pool:
+                    vmImage: 'ubuntu-latest'
+                steps:
+                    -   task: Docker@2
+                        displayName: Login to GCR
+                        inputs:
+                            command: login
+                            containerRegistry: '$(accountNamePrefix)-production-gcr'
+                    -   task: Docker@2
+                        displayName: Build Api
+                        inputs:
+                            command: buildAndPush
+                            dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+                            repository: '$(accountNamePrefix)-production/$(imageName)-api'
+                            tags: |
+                                $(tag)
+
+    -   stage: Production
+        displayName: Production
+        jobs:
+            -   job: Deploy
+                displayName: Deploy
+                condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+                pool:
+                    vmImage: 'ubuntu-latest'
+                steps:
+                    -   task: TerraformTaskV1@0
+                        displayName: Init
+                        inputs:
+                            command: init
+                            backendGCPBucketName: '$(accountNamePrefix)-production-$(imageName)-terraform-state'
+                            backendServiceGCP: '$(accountNamePrefix)-production-terraform'
+                            provider: gcp
+                            workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure'
+                            backendGCPPrefix: 'terraform/state'
+                    -   task: TerraformTaskV1@0
+                        displayName: Plan
+                        inputs:
+                            provider: gcp
+                            command: plan
+                            workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure'
+                            environmentServiceNameGCP: '$(accountNamePrefix)-production-terraform'
+                            commandOptions: '-var-file=./production.tfvars -var "project_id=$(accountNamePrefix)-production" -var "build_number=$(tag)" -var "image_name=$(imageName)-api" -var "database_connection_string=$(databaseConnectionStringProduction)"'
+                    -   task: TerraformTaskV1@0
+                        displayName: 'Validate & Apply'
+                        inputs:
+                            provider: gcp
+                            command: apply
+                            workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure'
+                            environmentServiceNameGCP: '$(accountNamePrefix)-production-terraform'
+                            commandOptions: '-var-file=./production.tfvars -var "project_id=$(accountNamePrefix)-production" -var "build_number=$(tag)" -var "image_name=$(imageName)-api" -var "database_connection_string=$(databaseConnectionStringProduction)"'

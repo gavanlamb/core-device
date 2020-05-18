@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Devices.Api", "src\Core.Devices.Api\Core.Devices.Api.csproj", "{B98C8BCB-8620-4671-82BC-0721129B7031}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AE9E770E-94B9-4CC3-AA74-645801E3CC1E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "infrastructure", "infrastructure", "{270909FF-F9AE-47FF-A81F-B574EE08CA48}"
+ProjectSection(SolutionItems) = preProject
+	infrastructure\main.tf = infrastructure\main.tf
+	infrastructure\production.tfvars = infrastructure\production.tfvars
+	infrastructure\variables.tf = infrastructure\variables.tf
+EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B98C8BCB-8620-4671-82BC-0721129B7031}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B98C8BCB-8620-4671-82BC-0721129B7031}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B98C8BCB-8620-4671-82BC-0721129B7031}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B98C8BCB-8620-4671-82BC-0721129B7031}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B98C8BCB-8620-4671-82BC-0721129B7031} = {AE9E770E-94B9-4CC3-AA74-645801E3CC1E}
+	EndGlobalSection
+EndGlobal

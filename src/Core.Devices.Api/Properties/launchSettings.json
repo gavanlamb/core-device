@@ -1,0 +1,38 @@
+﻿{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:8080",
+      "sslPort": 44337
+    }
+  },
+  "profiles": {
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "api/user/device",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "GOOGLE_APPLICATION_CREDENTIALS": "/Users/gavanlamb/Downloads/thoud-production-5acd6c78126c.json",
+        "Serilog__WriteTo__0__Args__projectId": "thoud-production",
+        "Serilog__Properties__Application": "core-devices-api",
+        "Serilog__Properties__Environment": "Development"
+      }
+    },
+    "Core.Devices": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "api/user/device",
+      "applicationUrl": "http://localhost:8080",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "GOOGLE_APPLICATION_CREDENTIALS": "/Users/gavanlamb/Downloads/thoud-production-5acd6c78126c.json",
+        "Serilog__WriteTo__0__Args__projectId": "thoud-production",
+        "Serilog__Properties__Application": "core-devices-api",
+        "Serilog__Properties__Environment": "Development"
+      }
+    }
+  }
+}
