@@ -102,6 +102,31 @@ spec:
             protocol: TCP
             port: 8080
             targetPort: 80
+            nodePort: 30000
     selector:
         app: "core-device-api"
     type: "NodePort"
+---
+apiVersion: "networking.gke.io/v1beta2"
+kind: "ManagedCertificate"
+metadata:
+    name: "api-certificate"
+spec:
+    domains:
+        -   device.thoud.co
+---
+apiVersion: "networking.k8s.io/v1beta1"
+kind: "Ingress"
+metadata:
+    name: "api-ingress"
+    namespace: "default"
+    annotations:
+        networking.gke.io/managed-certificates: "api-certificate"
+spec:
+    rules:
+        -   host: "device.thoud.co"
+            http:
+                paths:
+                    -   backend:
+                            serviceName: "core-device-api-service"
+                            servicePort: 8080
