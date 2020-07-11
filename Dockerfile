@@ -1,8 +1,8 @@
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build
 WORKDIR /app
 
-COPY ./Core.Devices.sln ./
-COPY ./src/Core.Devices.Api/Core.Devices.Api.csproj ./src/Core.Devices.Api/
+COPY ./Core.Device.sln ./
+COPY ./src/Core.Device.Api/Core.Device.Api.csproj ./src/Core.Device.Api/
 RUN dotnet restore
 
 COPY . ./
@@ -12,4 +12,4 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS runtime
 WORKDIR /app
 COPY --from=build /app/out ./
-ENTRYPOINT ["dotnet", "Core.Devices.Api.dll"]
+ENTRYPOINT ["dotnet", "Core.Device.Api.dll"]

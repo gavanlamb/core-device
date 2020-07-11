@@ -5,66 +5,78 @@
 resources:
     -   repo: self
 
-variables:
-    tag: '$(Build.BuildId)'
-    imageName: 'core-device'
-    accountNamePrefix: 'thoud'
-
 stages:
     -   stage: Build
         displayName: Build
         jobs:
             -   job: Api
                 displayName: Api
-                condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
                 pool:
                     vmImage: 'ubuntu-latest'
                 steps:
-                    -   task: Docker@2
-                        displayName: Login to GCR
+                    -   task: DockerInstaller@0
+                        displayName: Install Docker
                         inputs:
-                            command: login
-                            containerRegistry: '$(accountNamePrefix)-production-gcr'
-                    -   task: Docker@2
+                            dockerVersion: '17.09.0-ce'
+                    -   task: Bash@3
                         displayName: Build Api
                         inputs:
-                            command: buildAndPush
-                            dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-                            repository: '$(accountNamePrefix)-production/$(imageName)-api'
-                            tags: |
-                                $(tag)
+                            targetType: 'inline'
+                            script: 'docker build --tag gcr.io/production-282111/core-device-api:$(Build.BuildId) .'
+
+                    -   task: Docker@2
+                        displayName: Prod - GCR - Login
+                        inputs:
+                            command: login
+                            containerRegistry: 'gcr-production'
+                    -   task: Bash@3
+                        displayName: Prod - Push
+                        inputs:
+                            targetType: 'inline'
+                            script: 'docker push gcr.io/production-282111/core-device-api:$(Build.BuildId)'
+                    -   task: Docker@2
+                        displayName: Prod - GCR - Logout
+                        inputs:
+                            command: logout
+                            containerRegistry: 'gcr-production'
+    
+    -   stage: Publish
+        displayName: Publish Artifacts
+        jobs:
+            -   job: Manifests
+                displayName: Manifests
+                steps:
+                    -   publish: $(System.DefaultWorkingDirectory)/cicd
+                        artifact: cicd
 
     -   stage: Production
         displayName: Production
+        dependsOn: Publish
         jobs:
-            -   job: Deploy
+            -   deployment: Deploy
                 displayName: Deploy
-                condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+                environment: Production
                 pool:
-                    vmImage: 'ubuntu-latest'
-                steps:
-                    -   task: TerraformTaskV1@0
-                        displayName: Init
-                        inputs:
-                            command: init
-                            backendGCPBucketName: '$(accountNamePrefix)-production-$(imageName)-terraform-state'
-                            backendServiceGCP: '$(accountNamePrefix)-production-terraform'
-                            provider: gcp
-                            workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure'
-                            backendGCPPrefix: 'terraform/state'
-                    -   task: TerraformTaskV1@0
-                        displayName: Plan
-                        inputs:
-                            provider: gcp
-                            command: plan
-                            workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure'
-                            environmentServiceNameGCP: '$(accountNamePrefix)-production-terraform'
-                            commandOptions: '-var-file=./production.tfvars -var "project_id=$(accountNamePrefix)-production" -var "build_number=$(tag)" -var "image_name=$(imageName)-api" -var "database_connection_string=$(databaseConnectionStringProduction)"'
-                    -   task: TerraformTaskV1@0
-                        displayName: 'Validate & Apply'
-                        inputs:
-                            provider: gcp
-                            command: apply
-                            workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure'
-                            environmentServiceNameGCP: '$(accountNamePrefix)-production-terraform'
-                            commandOptions: '-var-file=./production.tfvars -var "project_id=$(accountNamePrefix)-production" -var "build_number=$(tag)" -var "image_name=$(imageName)-api" -var "database_connection_string=$(databaseConnectionStringProduction)"'
+                    vmImage: 'Ubuntu-latest'
+                strategy:
+                    runOnce:
+                        deploy:
+                            steps: 
+                                -   task: CmdLine@2
+                                    inputs:
+                                        script: |
+                                            sed -i 's/{BUILD_NUMBER}/$(Build.BuildId)/g' $(Pipeline.Workspace)/cicd/production.yml
+                                            sed -i 's/{DATABASE_CONNECTION_STRING}/$(production.database.connection_string)/g' $(Pipeline.Workspace)/cicd/production.yml
+                                            sed -i 's/{ENVIRONMENT}/production/g' $(Pipeline.Workspace)/cicd/production.yml
+                                            sed -i 's/{PROJECT_ID}/production-282111/g' $(Pipeline.Workspace)/cicd/production.yml
+                                -   task: Kubernetes@1
+                                    inputs:
+                                        connectionType: 'Kubernetes Service Connection'
+                                        kubernetesServiceEndpoint: 'Production-default-1593872553116'
+                                        namespace: 'default'
+                                        command: 'apply'
+                                        useConfigurationFile: true
+                                        configuration: '$(Pipeline.Workspace)/cicd/production.yml'
+                                        secretType: 'dockerRegistry'
+                                        containerRegistryType: 'Container Registry'
+                                        dockerRegistryEndpoint: 'gcr-production'

@@ -5,11 +5,11 @@ provider "google" {
 
 terraform {
   backend "gcs" {
+    credentials = "./key.json"
     prefix  = "terraform/state"
   }
 }
-
-resource "google_cloud_run_service" "cms" {
+resource "google_cloud_run_service" "api" {
   name = var.image_name
   location = var.region
 
@@ -28,7 +28,7 @@ resource "google_cloud_run_service" "cms" {
           value = var.environment
         }
         env {
-          name = "DevicesDatabaseSettings__ConnectionString"
+          name = "DeviceDatabaseSettings__ConnectionString"
           value = var.database_connection_string
         }
         env {
@@ -37,7 +37,11 @@ resource "google_cloud_run_service" "cms" {
         }
         env {
           name = "Serilog__Properties__Application"
-          value = "${var.project_id}-api"
+          value = var.image_name
+        }
+        env {
+          name = "Serilog__Properties__BuildNumber"
+          value = var.build_number
         }
         env {
           name = "Serilog__Properties__Environment"
@@ -61,7 +65,8 @@ resource "google_cloud_run_domain_mapping" "domain" {
   }
 
   spec {
-    route_name = google_cloud_run_service.cms.name
+    route_name = google_cloud_run_service.api.name
+    force_override = true
   }
 }
 resource "google_dns_record_set" "record" {
@@ -80,8 +85,8 @@ data "google_iam_policy" "noauth" {
   }
 }
 resource "google_cloud_run_service_iam_policy" "noauth" {
-  location = google_cloud_run_service.cms.location
-  service = google_cloud_run_service.cms.name
-  project = var.project_id
+  location = google_cloud_run_service.api.location
+  service = google_cloud_run_service.api.name
+  project = google_cloud_run_service.api.project
   policy_data = data.google_iam_policy.noauth.policy_data
 }
