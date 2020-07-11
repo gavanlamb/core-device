@@ -106,21 +106,11 @@ spec:
         app: "core-device-api"
     type: "NodePort"
 ---
-apiVersion: networking.gke.io/v1beta2
-kind: ManagedCertificate
-metadata:
-    name: api-certificates
-spec:
-    domains:
-        -   device.thoud.co
----
 apiVersion: "extensions/v1beta1"
 kind: "Ingress"
 metadata:
     name: "api-ingress"
     namespace: "default"
-    annotations:
-        networking.gke.io/managed-certificates: api-certificates
 spec:
     rules:
         -   host: "device.thoud.co"
