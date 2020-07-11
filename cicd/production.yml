@@ -105,17 +105,3 @@ spec:
     selector:
         app: "core-device-api"
     type: "NodePort"
----
-apiVersion: "extensions/v1beta1"
-kind: "Ingress"
-metadata:
-    name: "api-ingress"
-    namespace: "default"
-spec:
-    rules:
-        -   host: "device.thoud.co"
-            http:
-                paths:
-                    -   backend:
-                            serviceName: "core-device-api-service"
-                            servicePort: 8080
