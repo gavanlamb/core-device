@@ -68,6 +68,12 @@ spec:
                                 configMapKeyRef:
                                     key: "Serilog__Properties__Environment"
                                     name: "core-device-api-config"
+                    livenessProbe:
+                        httpGet:
+                            path: /api/health
+                            port: 80
+                        initialDelaySeconds: 5
+                        periodSeconds: 3
 ---
 apiVersion: "autoscaling/v2beta1"
 kind: "HorizontalPodAutoscaler"
@@ -114,12 +120,6 @@ kind: "BackendConfig"
 metadata:
     name: "device-api-health-check"
 spec:
-    healthCheck:
-        checkIntervalSec: 120
-        timeoutSec: 30
-        healthyThreshold: 3
-        type: https
-        requestPath: /api/health
     timeoutSec: 30
     connectionDraining:
         drainingTimeoutSec: 60
