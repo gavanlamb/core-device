@@ -70,7 +70,7 @@ spec:
                                     name: "core-device-api-config"
                     livenessProbe:
                         httpGet:
-                            path: /api/health
+                            path: "/api/health"
                             port: 80
                         initialDelaySeconds: 5
                         periodSeconds: 3
@@ -101,7 +101,7 @@ metadata:
     name: "core-device-api-service"
     namespace: "default"
     annotations:
-        cloud.google.com/backend-config: '{"default": "device-api-health-check"}'
+        cloud.google.com/backend-config: '{"default": "device-api-backend"}'
     labels:
         app: "core-device-api"
 spec:
@@ -118,12 +118,17 @@ spec:
 apiVersion: cloud.google.com/v1
 kind: "BackendConfig"
 metadata:
-    name: "device-api-health-check"
+    name: "device-api-backend"
 spec:
+    healthCheck:
+        checkIntervalSec: 120
+        timeoutSec: 30
+        type: "https"
+        requestPath: "/api/health"
+        port: 30000
     timeoutSec: 30
     connectionDraining:
         drainingTimeoutSec: 60
-
 ---
 apiVersion: "networking.gke.io/v1beta2"
 kind: "ManagedCertificate"
