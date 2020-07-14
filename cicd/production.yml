@@ -35,7 +35,7 @@ spec:
                 -   name: "core-device-api"
                     image: "gcr.io/production-282111/core-device-api:{BUILD_NUMBER}"
                     ports:
-                        -   containerPort: 80
+                        -   containerPort: 443
                             protocol: TCP
                     env:
                         -   name: "ASPNETCORE_ENVIRONMENT"
@@ -68,12 +68,16 @@ spec:
                                 configMapKeyRef:
                                     key: "Serilog__Properties__Environment"
                                     name: "core-device-api-config"
+                    readinessProbe:
+                        httpGet:
+                            path: "/api/health"
+                            port: 443
+                        initialDelaySeconds: 5
                     livenessProbe:
                         httpGet:
                             path: "/api/health"
-                            port: 80
+                            port: 443
                         initialDelaySeconds: 5
-                        periodSeconds: 3
 ---
 apiVersion: "autoscaling/v2beta1"
 kind: "HorizontalPodAutoscaler"
@@ -99,33 +103,31 @@ apiVersion: "v1"
 kind: "Service"
 metadata:
     name: "core-device-api-service"
-    namespace: "default"
     annotations:
-        cloud.google.com/backend-config: '{"default": "device-api-backend"}'
+        beta.cloud.google.com/backend-config: '{"default":"device-api-backend"}'
+        cloud.google.com/app-protocols: '{"8443-to-443-tcp-port":"HTTPS"}'
     labels:
         app: "core-device-api"
 spec:
-    ports:
-        -   name: "8080-to-80-tcp"
-            protocol: TCP
-            port: 8080
-            targetPort: 80
-            nodePort: 30000
+    type: "NodePort"
     selector:
         app: "core-device-api"
-    type: "NodePort"
+    ports:
+        -   name: "8443-to-443-tcp-port"
+            protocol: TCP
+            port: 8443
+            targetPort: 443
+            nodePort: 30000
 ---
-apiVersion: cloud.google.com/v1
+apiVersion: cloud.google.com/v1beta1
 kind: "BackendConfig"
 metadata:
     name: "device-api-backend"
 spec:
     healthCheck:
-        checkIntervalSec: 120
-        timeoutSec: 30
-        type: "https"
-        requestPath: "/api/health"
-        port: 30000
+        checkIntervalSec: 10
+        type: https
+        requestPath: /api/health
     timeoutSec: 30
     connectionDraining:
         drainingTimeoutSec: 60
@@ -142,9 +144,9 @@ apiVersion: "networking.k8s.io/v1beta1"
 kind: "Ingress"
 metadata:
     name: "api-ingress"
-    namespace: "default"
     annotations:
         networking.gke.io/managed-certificates: "api-certificate"
+        kubernetes.io/ingress.allow-http: "false"
 spec:
     rules:
         -   host: "device.thoud.co"
@@ -152,4 +154,4 @@ spec:
                 paths:
                     -   backend:
                             serviceName: "core-device-api-service"
-                            servicePort: 8080
+                            servicePort: 8443
