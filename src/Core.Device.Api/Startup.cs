@@ -62,10 +62,14 @@ namespace Core.Device.Api
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            ServiceCollectionExtensions.AddSerilog(Configuration);
+            //ServiceCollectionExtensions.AddSerilog(Configuration);
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseHttpsRedirection();
             }
 
             app.UseSwagger();
