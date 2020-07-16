@@ -1,157 +1,155 @@
 ---
-apiVersion: "v1"
-kind: "ConfigMap"
+apiVersion: v1
+kind: ConfigMap
 metadata:
-    name: "core-device-api-config"
-    namespace: "default"
+    name: core-device-api-config
+    namespace: default
     labels:
-        app: "core-device-api"
+        app: core-device-api
 data:
     DeviceDatabaseSettings__ConnectionString: "{DATABASE_CONNECTION_STRING}"
     ASPNETCORE_ENVIRONMENT: "{ENVIRONMENT}"
     Serilog__Properties__Environment: "{ENVIRONMENT}"
-    Serilog__Properties__Application: "core-device-api"
+    Serilog__Properties__Application: core-device-api
     Serilog__Properties__BuildNumber: "{BUILD_NUMBER}"
     Serilog__WriteTo__0__Args__projectId: "{PROJECT_ID}"
 ---
-apiVersion: "apps/v1"
-kind: "Deployment"
+apiVersion: networking.gke.io/v1beta2
+kind: ManagedCertificate
 metadata:
-    name: "core-device-api"
-    namespace: "default"
-    labels:
-        app: "core-device-api"
-spec:
-    replicas: 1
-    selector:
-        matchLabels:
-            app: "core-device-api"
-    template:
-        metadata:
-            labels:
-                app: "core-device-api"
-        spec:
-            containers:
-                -   name: "core-device-api"
-                    image: "gcr.io/production-282111/core-device-api:{BUILD_NUMBER}"
-                    ports:
-                        -   containerPort: 443
-                            protocol: TCP
-                    env:
-                        -   name: "ASPNETCORE_ENVIRONMENT"
-                            valueFrom:
-                                configMapKeyRef:
-                                    key: "ASPNETCORE_ENVIRONMENT"
-                                    name: "core-device-api-config"
-                        -   name: "DeviceDatabaseSettings__ConnectionString"
-                            valueFrom:
-                                configMapKeyRef:
-                                    key: "DeviceDatabaseSettings__ConnectionString"
-                                    name: "core-device-api-config"
-                        -   name: "Serilog__WriteTo__0__Args__projectId"
-                            valueFrom:
-                                configMapKeyRef:
-                                    key: "Serilog__WriteTo__0__Args__projectId"
-                                    name: "core-device-api-config"
-                        -   name: "Serilog__Properties__Application"
-                            valueFrom:
-                                configMapKeyRef:
-                                    key: "Serilog__Properties__Application"
-                                    name: "core-device-api-config"
-                        -   name: "Serilog__Properties__BuildNumber"
-                            valueFrom:
-                                configMapKeyRef:
-                                    key: "Serilog__Properties__BuildNumber"
-                                    name: "core-device-api-config"
-                        -   name: "Serilog__Properties__Environment"
-                            valueFrom:
-                                configMapKeyRef:
-                                    key: "Serilog__Properties__Environment"
-                                    name: "core-device-api-config"
-                    readinessProbe:
-                        httpGet:
-                            path: "/api/health"
-                            port: 443
-                        initialDelaySeconds: 5
-                    livenessProbe:
-                        httpGet:
-                            path: "/api/health"
-                            port: 443
-                        initialDelaySeconds: 5
----
-apiVersion: "autoscaling/v2beta1"
-kind: "HorizontalPodAutoscaler"
-metadata:
-    name: "core-device-api-hpa-sd9s"
-    namespace: "default"
-    labels:
-        app: "core-device-api"
-spec:
-    scaleTargetRef:
-        kind: "Deployment"
-        name: "core-device-api"
-        apiVersion: "apps/v1"
-    minReplicas: 1
-    maxReplicas: 5
-    metrics:
-        -   type: "Resource"
-            resource:
-                name: "cpu"
-                targetAverageUtilization: 80
----
-apiVersion: "v1"
-kind: "Service"
-metadata:
-    name: "core-device-api-service"
-    annotations:
-        beta.cloud.google.com/backend-config: '{"default":"device-api-backend"}'
-        cloud.google.com/app-protocols: '{"8443-to-443-tcp-port":"HTTPS"}'
-    labels:
-        app: "core-device-api"
-spec:
-    type: "NodePort"
-    selector:
-        app: "core-device-api"
-    ports:
-        -   name: "8443-to-443-tcp-port"
-            protocol: TCP
-            port: 8443
-            targetPort: 443
-            nodePort: 30000
----
-apiVersion: cloud.google.com/v1beta1
-kind: "BackendConfig"
-metadata:
-    name: "device-api-backend"
-spec:
-    healthCheck:
-        checkIntervalSec: 10
-        type: https
-        requestPath: /api/health
-    timeoutSec: 30
-    connectionDraining:
-        drainingTimeoutSec: 60
----
-apiVersion: "networking.gke.io/v1beta2"
-kind: "ManagedCertificate"
-metadata:
-    name: "api-certificate"
+    name: api-certificate
 spec:
     domains:
         -   device.thoud.co
 ---
-apiVersion: "networking.k8s.io/v1beta1"
-kind: "Ingress"
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
 metadata:
-    name: "api-ingress"
+    name: api-ingress
     annotations:
         networking.gke.io/managed-certificates: "api-certificate"
         kubernetes.io/ingress.allow-http: "false"
 spec:
     rules:
-        -   host: "device.thoud.co"
+        -   host: device.thoud.co
             http:
                 paths:
                     -   backend:
-                            serviceName: "core-device-api-service"
+                            serviceName: core-device-api-service
                             servicePort: 8443
+---
+apiVersion: cloud.google.com/v1beta1
+kind: BackendConfig
+metadata:
+    name: device-api-backend
+spec:
+    healthCheck:
+        checkIntervalSec: 10
+        type: HTTPS
+        requestPath: /api/health
+    timeoutSec: 30
+    connectionDraining:
+        drainingTimeoutSec: 60
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: core-device-api-service
+    annotations:
+        beta.cloud.google.com/backend-config: '{"default":"device-api-backend"}'
+        cloud.google.com/app-protocols: '{"8443-to-443-tcp-port":"HTTPS"}'
+    labels:
+        app: core-device-api
+spec:
+    type: NodePort
+    selector:
+        app: core-device-api
+    ports:
+        -   name: 8443-to-443-tcp-port
+            protocol: TCP
+            port: 8443
+            targetPort: 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: core-device-api
+    namespace: default
+    labels:
+        app: core-device-api
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: core-device-api
+    template:
+        metadata:
+            labels:
+                app: core-device-api
+        spec:
+            containers:
+                -   name: core-device-api
+                    image: gcr.io/production-282111/core-device-api:{BUILD_NUMBER}
+                    ports:
+                        -   containerPort: 443
+                    env:
+                        -   name: ASPNETCORE_ENVIRONMENT
+                            valueFrom:
+                                configMapKeyRef:
+                                    key: ASPNETCORE_ENVIRONMENT
+                                    name: core-device-api-config
+                        -   name: DeviceDatabaseSettings__ConnectionString
+                            valueFrom:
+                                configMapKeyRef:
+                                    key: DeviceDatabaseSettings__ConnectionString
+                                    name: core-device-api-config
+                        -   name: Serilog__WriteTo__0__Args__projectId
+                            valueFrom:
+                                configMapKeyRef:
+                                    key: Serilog__WriteTo__0__Args__projectId
+                                    name: core-device-api-config
+                        -   name: Serilog__Properties__Application
+                            valueFrom:
+                                configMapKeyRef:
+                                    key: Serilog__Properties__Application
+                                    name: core-device-api-config
+                        -   name: Serilog__Properties__BuildNumber
+                            valueFrom:
+                                configMapKeyRef:
+                                    key: Serilog__Properties__BuildNumber
+                                    name: core-device-api-config
+                        -   name: Serilog__Properties__Environment
+                            valueFrom:
+                                configMapKeyRef:
+                                    key: Serilog__Properties__Environment
+                                    name: core-device-api-config
+                    readinessProbe:
+                        httpGet:
+                            path: /api/health
+                            port: 443
+                        initialDelaySeconds: 20
+                    livenessProbe:
+                        httpGet:
+                            path: /api/health
+                            port: 443
+                        initialDelaySeconds: 20
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+    name: core-device-api-hpa-sd9s
+    namespace: default
+    labels:
+        app: core-device-api
+spec:
+    scaleTargetRef:
+        kind: Deployment
+        name: core-device-api
+        apiVersion: apps/v1
+    minReplicas: 1
+    maxReplicas: 5
+    metrics:
+        -   type: Resource
+            resource:
+                name: cpu
+                targetAverageUtilization: 80
