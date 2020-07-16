@@ -36,7 +36,7 @@ spec:
                 paths:
                     -   backend:
                             serviceName: core-device-api-service
-                            servicePort: 8443
+                            servicePort: 8080
 ---
 apiVersion: cloud.google.com/v1beta1
 kind: BackendConfig
@@ -57,7 +57,7 @@ metadata:
     name: core-device-api-service
     annotations:
         beta.cloud.google.com/backend-config: '{"default":"device-api-backend"}'
-        cloud.google.com/app-protocols: '{"8443-to-443-tcp-port":"HTTPS"}'
+        cloud.google.com/app-protocols: '{"8080-to-80-tcp-port":"HTTP"}'
     labels:
         app: core-device-api
 spec:
@@ -65,10 +65,10 @@ spec:
     selector:
         app: core-device-api
     ports:
-        -   name: 8443-to-443-tcp-port
+        -   name: 8080-to-80-tcp-port
             protocol: TCP
-            port: 8443
-            targetPort: 443
+            port: 8080
+            targetPort: 80
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -91,7 +91,7 @@ spec:
                 -   name: core-device-api
                     image: gcr.io/production-282111/core-device-api:{BUILD_NUMBER}
                     ports:
-                        -   containerPort: 443
+                        -   containerPort: 80
                     env:
                         -   name: ASPNETCORE_ENVIRONMENT
                             valueFrom:
@@ -126,12 +126,12 @@ spec:
                     readinessProbe:
                         httpGet:
                             path: /api/health
-                            port: 443
+                            port: 80
                         initialDelaySeconds: 20
                     livenessProbe:
                         httpGet:
                             path: /api/health
-                            port: 443
+                            port: 80
                         initialDelaySeconds: 20
 ---
 apiVersion: autoscaling/v2beta1
