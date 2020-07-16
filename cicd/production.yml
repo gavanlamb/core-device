@@ -45,7 +45,7 @@ metadata:
 spec:
     healthCheck:
         checkIntervalSec: 10
-        type: HTTPS
+        type: HTTP
         requestPath: /api/health
     timeoutSec: 30
     connectionDraining:
