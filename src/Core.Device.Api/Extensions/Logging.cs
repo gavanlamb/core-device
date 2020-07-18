@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
@@ -20,7 +19,6 @@ namespace Core.Device.Api.Extensions
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom
                 .Configuration(configuration)
-                //.Enrich.WithProperty("Environment", Environment.GetEnvironmentVariable(environmentVariableName))
                 .CreateLogger();
             Log.Information(firstMessage);
         }
