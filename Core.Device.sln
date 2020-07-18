@@ -4,13 +4,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Device.Api", "src\Core
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AE9E770E-94B9-4CC3-AA74-645801E3CC1E}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "infrastructure", "infrastructure", "{270909FF-F9AE-47FF-A81F-B574EE08CA48}"
-ProjectSection(SolutionItems) = preProject
-	infrastructure\main.tf = infrastructure\main.tf
-	infrastructure\production.tfvars = infrastructure\production.tfvars
-	infrastructure\variables.tf = infrastructure\variables.tf
-EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
