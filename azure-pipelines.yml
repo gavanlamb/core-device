@@ -67,7 +67,7 @@ stages:
                                         script: |
                                             sed -i 's/{BUILD_NUMBER}/$(Build.BuildId)/g' $(Pipeline.Workspace)/cicd/production.yml
                                             sed -i 's/{DATABASE_CONNECTION_STRING}/$(production.database.connection_string)/g' $(Pipeline.Workspace)/cicd/production.yml
-                                            sed -i 's/{ENVIRONMENT}/production/g' $(Pipeline.Workspace)/cicd/production.yml
+                                            sed -i 's/{ENVIRONMENT}/Production/g' $(Pipeline.Workspace)/cicd/production.yml
                                             sed -i 's/{PROJECT_ID}/production-282111/g' $(Pipeline.Workspace)/cicd/production.yml
                                 -   task: Kubernetes@1
                                     inputs:
